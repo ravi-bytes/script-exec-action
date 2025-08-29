@@ -1,0 +1,11 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "secure-python-executor-stack"
+resolve_s3 = true
+s3_prefix = "secure-python-executor-stack"
+region = "ap-south-1"
+profile = "lambda-executor-client"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = []

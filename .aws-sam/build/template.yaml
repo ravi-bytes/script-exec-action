@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'A secure, isolated Python script execution environment using AWS Lambda.
+
+  '
+Resources:
+  SandboxVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+  SandboxPrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: SandboxVPC
+      CidrBlock: 10.0.1.0/24
+  SandboxSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for the sandboxed Lambda with no outbound access
+      VpcId:
+        Ref: SandboxVPC
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+      - PolicyName: SandboxedExecutorPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource:
+              Fn::Sub: arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${PythonExecutorFunction}:*
+          - Effect: Allow
+            Action:
+            - ec2:CreateNetworkInterface
+            - ec2:DescribeNetworkInterfaces
+            - ec2:DeleteNetworkInterface
+            Resource: '*'
+  PythonExecutorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: workflow-python-executor
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.11
+      Architectures:
+      - arm64
+      CodeUri: PythonExecutorFunction
+      Role:
+        Fn::GetAtt:
+        - LambdaExecutionRole
+        - Arn
+      MemorySize: 256
+      Timeout: 30
+      VpcConfig:
+        SecurityGroupIds:
+        - Ref: SandboxSecurityGroup
+        SubnetIds:
+        - Ref: SandboxPrivateSubnet
+    Metadata:
+      SamResourceId: PythonExecutorFunction
+Outputs:
+  ExecutorFunctionName:
+    Description: The name of the Python Executor Lambda Function
+    Value:
+      Ref: PythonExecutorFunction

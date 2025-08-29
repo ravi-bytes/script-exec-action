@@ -1,0 +1,67 @@
+# template.yaml
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  A secure, isolated Python script execution environment using AWS Lambda.
+
+Resources:
+  # 1. The Isolated Network (VPC with no internet access)
+  SandboxVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+
+  SandboxPrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SandboxVPC
+      CidrBlock: 10.0.1.0/24
+
+  SandboxSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security group for the sandboxed Lambda with no outbound access"
+      VpcId: !Ref SandboxVPC
+
+  # 2. The Secure IAM Role (minimal permissions)
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        # These are the ONLY permissions needed: basic logging and VPC access.
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+
+  # 3. The Lambda Function itself, with all security configurations
+  PythonExecutorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: workflow-python-executor
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.11
+      Architectures: [arm64]
+      CodeUri: src/
+      Role: !GetAtt LambdaExecutionRole.Arn
+      # Enforcing Resource Limits and Timeouts
+      MemorySize: 256
+      Timeout: 30
+      # Enforcing No Network Access
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref SandboxSecurityGroup
+        SubnetIds:
+          - !Ref SandboxPrivateSubnet
+
+Outputs:
+  ExecutorFunctionName:
+    Description: "The name of the Python Executor Lambda Function"
+    Value: !Ref PythonExecutorFunction

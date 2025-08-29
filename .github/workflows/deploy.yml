@@ -1,0 +1,33 @@
+# .github/workflows/deploy.yml
+name: Deploy Secure Lambda to AWS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # Required for passwordless (OIDC) authentication
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }} # Stored securely in GitHub Secrets
+          aws-region: ap-south-1 # IMPORTANT: Change to your desired AWS region
+
+      - name: Setup SAM CLI
+        uses: aws-actions/setup-sam@v2
+
+      - name: Build SAM Application
+        run: sam build
+
+      - name: Deploy SAM Application
+        run: sam deploy --no-confirm-changeset --stack-name secure-python-executor-stack --capabilities CAPABILITY_IAM
