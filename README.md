@@ -1,6 +1,8 @@
 Secure Serverless Python SandboxA secure, isolated, and scalable environment for executing untrusted Python scripts, built on AWS Lambda and controlled via an Infrastructure as Code script using the AWS Serverless Application Model (SAM).This project is designed for applications (e.g., workflow builders like n8n, low-code platforms) that need to offer users the ability to run custom Python code on a server without compromising the security of the host system.🏛️ Architecture OverviewThis system is built on the principle of "isolate, execute, and destroy." Instead of running user code on a persistent server, we dynamically provision a secure, temporary micro-container (an AWS Lambda function) for each execution. This container has no network access and is destroyed the moment the script finishes.The entire infrastructure is defined in the template.yaml file and can be deployed with a single command.
 
+
 graph TD
+
     subgraph "Your Laptop / CI/CD"
         A[AWS SAM CLI] -- Deploys --> B((AWS CloudFormation));
         C[AWS CLI] -- Invokes --> E;
