@@ -1,4 +1,6 @@
-Secure Serverless Python SandboxA secure, isolated, and scalable environment for executing untrusted Python scripts, built on AWS Lambda and controlled via an Infrastructure as Code script using the AWS Serverless Application Model (SAM).This project is designed for applications (e.g., workflow builders like n8n, low-code platforms) that need to offer users the ability to run custom Python code on a server without compromising the security of the host system.🏛️ Architecture OverviewThis system is built on the principle of "isolate, execute, and destroy." Instead of running user code on a persistent server, we dynamically provision a secure, temporary micro-container (an AWS Lambda function) for each execution. This container has no network access and is destroyed the moment the script finishes.The entire infrastructure is defined in the template.yaml file and can be deployed with a single command.graph TD
+Secure Serverless Python SandboxA secure, isolated, and scalable environment for executing untrusted Python scripts, built on AWS Lambda and controlled via an Infrastructure as Code script using the AWS Serverless Application Model (SAM).This project is designed for applications (e.g., workflow builders like n8n, low-code platforms) that need to offer users the ability to run custom Python code on a server without compromising the security of the host system.🏛️ Architecture OverviewThis system is built on the principle of "isolate, execute, and destroy." Instead of running user code on a persistent server, we dynamically provision a secure, temporary micro-container (an AWS Lambda function) for each execution. This container has no network access and is destroyed the moment the script finishes.The entire infrastructure is defined in the template.yaml file and can be deployed with a single command.
+
+graph TD
     subgraph "Your Laptop / CI/CD"
         A[AWS SAM CLI] -- Deploys --> B((AWS CloudFormation));
         C[AWS CLI] -- Invokes --> E;
@@ -16,6 +18,8 @@ Secure Serverless Python SandboxA secure, isolated, and scalable environment for
     end
 
     style E fill:#FF9900,stroke:#333,stroke-width:2px
+
+
 ✨ Core Security FeaturesServerless Execution: No servers to manage, patch, or secure. Scales automatically.Complete Network Isolation: The script runs inside a VPC with no internet or internal network access, preventing data exfiltration or attacks on other resources.Strict IAM Permissions: The Lambda function runs with a "least-privilege" IAM role that only permits basic logging and VPC access.Ephemeral Environment: The execution environment is created on-demand and destroyed immediately after, ensuring no state persists between runs.Resource Limits: Strict memory (256MB) and time (30 seconds) limits prevent denial-of-service and infinite loop attacks.Read-Only Filesystem: The execution environment is read-only by default (except for /tmp), preventing the script from modifying its own environment.Infrastructure as Code (IaC): The entire security posture is defined in template.yaml, making it auditable, version-controlled, and repeatable.📂 Project Structure.
 ├── .github/
 │   └── workflows/
